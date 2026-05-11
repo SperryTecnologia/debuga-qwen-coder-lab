@@ -1,0 +1,65 @@
+# ============================================================
+# Fine-Tuning Config: Qwen2.5-Coder-14B-Instruct + LoRA
+# ============================================================
+# Uso: referência para scripts de treino com PEFT/TRL
+# Hardware mínimo: 1x GPU com 24 GB VRAM (QLoRA 4-bit)
+# Hardware recomendado: 2x GPU com 24 GB VRAM (LoRA FP16)
+# ============================================================
+
+# Modelo base
+model:
+  name: "Qwen/Qwen2.5-Coder-14B-Instruct"
+  trust_remote_code: true
+  torch_dtype: "bfloat16"
+
+# Quantização para QLoRA (obrigatório para single GPU 24 GB)
+quantization:
+  enabled: true
+  load_in_4bit: true
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_compute_dtype: "bfloat16"
+  bnb_4bit_use_double_quant: true
+
+# Configuração LoRA
+lora:
+  r: 32                    # Rank maior para modelo maior
+  lora_alpha: 64           # 2x rank
+  lora_dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+# Dataset
+data:
+  train_file: "fine-tuning/data/train.jsonl"
+  # validation_file: "fine-tuning/data/val.jsonl"
+  max_seq_length: 4096     # 14B suporta contexto maior
+  format: "chatml"
+
+# Hiperparâmetros de treino
+training:
+  output_dir: "./fine-tuning/output/qwen-coder-14b-devops-lora"
+  num_train_epochs: 2       # Menos épocas para modelo maior
+  per_device_train_batch_size: 2  # Batch menor por VRAM
+  gradient_accumulation_steps: 8  # Compensar batch menor
+  learning_rate: 1.0e-4     # LR menor para modelo maior
+  weight_decay: 0.01
+  warmup_ratio: 0.03
+  lr_scheduler_type: "cosine"
+  logging_steps: 10
+  save_strategy: "epoch"
+  bf16: true
+  gradient_checkpointing: true
+  max_grad_norm: 1.0
+
+# Pós-treino
+merge:
+  enabled: false
+  output_dir: "./models/qwen-coder-14b-devops-merged"

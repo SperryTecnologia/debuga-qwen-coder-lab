@@ -1,0 +1,44 @@
+# Third-Party Licenses
+
+This project uses or references the following open-source projects:
+
+## Qwen2.5-Coder
+- Author: Qwen Team / Alibaba Cloud
+- License: Apache License 2.0
+- Repository: https://huggingface.co/Qwen
+- Note: Model weights are NOT included in this repository
+
+## HuggingFace Transformers
+- Author: Hugging Face, Inc.
+- License: Apache License 2.0
+- Repository: https://github.com/huggingface/transformers
+
+## PEFT (Parameter-Efficient Fine-Tuning)
+- Author: Hugging Face, Inc.
+- License: Apache License 2.0
+- Repository: https://github.com/huggingface/peft
+
+## PyTorch
+- Author: Meta Platforms, Inc.
+- License: BSD-3-Clause
+- Repository: https://github.com/pytorch/pytorch
+
+## Jupyter
+- Author: Project Jupyter Contributors
+- License: BSD-3-Clause
+- Repository: https://github.com/jupyter/jupyter
+
+## Accelerate
+- Author: Hugging Face, Inc.
+- License: Apache License 2.0
+- Repository: https://github.com/huggingface/accelerate
+
+## Datasets
+- Author: Hugging Face, Inc.
+- License: Apache License 2.0
+- Repository: https://github.com/huggingface/datasets
+
+---
+
+All trademarks and project names belong to their respective owners.
+Sperry Tecnologia is not the author of any of these upstream projects.
