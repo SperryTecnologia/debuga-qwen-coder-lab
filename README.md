@@ -1,6 +1,6 @@
 # debuga-qwen-coder-lab
 
-> **Repositório privado** — acesso restrito à equipe Sperry Tecnologia, alunos autorizados e clientes com contrato vigente.
+> **Repositório exclusivo** — Acesso restrito à equipe Sperry Tecnologia, alunos autorizados e clientes com contrato vigente.
 
 Laboratório prático de IA local com **Ollama**, modelos **Qwen** e GPU **NVIDIA RTX 3090** para integração com o [debuga.ai](https://debuga.ai).
 
@@ -29,9 +29,9 @@ Este repositório documenta e organiza um laboratório funcional para:
 │  │  │  ┌───────────────────────────────────────────┐  │  │  │
 │  │  │  │  Docker + NVIDIA Container Toolkit        │  │  │  │
 │  │  │  │  ┌─────────────────────────────────────┐  │  │  │  │
-│  │  │  │  │  Ollama Container (--gpus all)       │  │  │  │  │
+│  │  │  │  │  Ollama Container (--gpus all)      │  │  │  │  │
 │  │  │  │  │  Modelo: qwen2.5:7b-instruct        │  │  │  │  │
-│  │  │  │  │  API: http://localhost:11434         │  │  │  │  │
+│  │  │  │  │  API: http://localhost:11434        │  │  │  │  │
 │  │  │  │  └─────────────────────────────────────┘  │  │  │  │
 │  │  │  └───────────────────────────────────────────┘  │  │  │
 │  │  └─────────────────────────────────────────────────┘  │  │
