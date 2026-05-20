@@ -110,13 +110,13 @@ Resultados de referência com NVIDIA RTX 3090:
 
 ```
 ┌─────────────────────────────────────────┐
-│           Host (Windows + Hyper-V)       │
+│           Host (Windows + Hyper-V)      │
 ├─────────────────────────────────────────┤
-│  VM Ubuntu (DDA GPU passthrough)         │
-│  ├── Ollama (serving de modelos)         │
-│  ├── Scripts de benchmark                │
-│  ├── Prompts de avaliação                │
-│  └── Coleta de métricas                  │
+│  VM Ubuntu (DDA GPU passthrough)        │
+│  ├── Ollama (serving de modelos)        │
+│  ├── Scripts de benchmark               │
+│  ├── Prompts de avaliação               │
+│  └── Coleta de métricas                 │
 └─────────────────────────────────────────┘
 ```
 
