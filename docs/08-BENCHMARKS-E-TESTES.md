@@ -102,7 +102,7 @@ chmod +x benchmark.sh
 ./benchmark.sh qwen3:14b 5
 
 # Benchmark apontando para Ollama externo
-OLLAMA_URL=http://192.168.1.100:11434 ./benchmark.sh qwen2.5:7b-instruct 10
+OLLAMA_URL=http://192.0.2.20:11434 ./benchmark.sh qwen2.5:7b-instruct 10
 ```
 
 ---

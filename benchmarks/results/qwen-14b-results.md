@@ -1,5 +1,10 @@
 # Qwen2.5-Coder-14B-Instruct — Resultados de Avaliação
 
+> [!WARNING]
+> **ARQUIVO HISTÓRICO NÃO HOMOLOGADO.** Este snapshot não inclui respostas brutas,
+> manifesto completo e método de scoring suficientes para reprodução independente.
+> Os números abaixo são mantidos como material ilustrativo e não devem orientar produção.
+
 > Avaliação realizada com dados sintéticos em ambiente de laboratório.
 > Não representa performance em produção.
 

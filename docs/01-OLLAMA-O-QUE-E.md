@@ -142,7 +142,7 @@ docker run -d --gpus all \
 - Isolamento completo
 - Reproduzível (docker-compose)
 - Fácil de atualizar, parar, reiniciar
-- Integra com o debuga.ai homolog via docker-compose
+- Integra com o ambiente de teste via docker-compose
 
 **Desvantagens:**
 - Requer NVIDIA Container Toolkit para GPU
@@ -150,7 +150,7 @@ docker run -d --gpus all \
 
 ### Recomendação
 
-Para o laboratório e integração com debuga.ai, **usar Docker** é a abordagem recomendada. O docker-compose do debuga-ai-homolog já inclui um serviço Ollama no profile `gpu`.
+Para o laboratório e integração com debuga.ai, **usar Docker** é a abordagem recomendada. O docker-compose do ambiente de teste já inclui um serviço Ollama no profile `gpu`.
 
 ---
 

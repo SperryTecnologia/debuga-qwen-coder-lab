@@ -1,244 +1,185 @@
-# debuga-qwen-coder-lab
+<p align="center">
+  <img src="https://debuga.ai/favicon.ico" width="84" alt="debuga.ai" />
+</p>
 
-**Laboratório de avaliação, benchmarking e fine-tuning de modelos para geração de código — focado no domínio de infraestrutura, DevOps e automação.**
+<h1 align="center">debuga.ai Qwen Coder Lab</h1>
 
-Desenvolvido por [Sperry Tecnologia](https://www.sperrytecnologia.com.br).
+<p align="center">
+  <strong>Laboratório experimental para avaliação de modelos em tarefas de Infraestrutura e DevOps</strong>
+</p>
 
----
+<p align="center">
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="benchmarks/METHODOLOGY.md">Metodologia</a> ·
+  <a href="docs/08-BENCHMARKS-E-TESTES.md">Testes</a> ·
+  <a href="docs/README.md">Documentação</a> ·
+  <a href="SECURITY.md">Segurança</a>
+</p>
 
-## Visão Geral
-
-Este repositório contém os experimentos, benchmarks e metodologias utilizados para selecionar e otimizar os modelos de geração de código da plataforma [debuga.ai](https://debuga.ai). O foco é avaliar modelos open-source para o domínio específico de infraestrutura técnica: scripts de automação, configurações de rede, análise de logs, Dockerfiles, pipelines CI/CD e troubleshooting.
-
-```mermaid
-flowchart TB
-    subgraph Pipeline["Pipeline de Avaliação"]
-        direction TB
-        A["Seleção de Candidatos<br/>HuggingFace / Papers"]
-        B["Benchmark Padronizado<br/>HumanEval + Custom Suite"]
-        C["Avaliação de Domínio<br/>Infra / DevOps / Security"]
-        D["Teste de Integração<br/>vLLM + debuga.ai"]
-        E["Deploy em Produção<br/>Modelo aprovado"]
-    end
-
-    A --> B --> C --> D --> E
-```
-
----
-
-## Modelos Avaliados
-
-### Ranking por Performance (Domínio Técnico)
-
-```mermaid
-xychart-beta
-    title "Pass@1 — Benchmark Infraestrutura (% acerto)"
-    x-axis ["Qwen2.5-Coder-7B", "DeepSeek-Coder-V2", "CodeLlama-13B", "StarCoder2-7B", "Mistral-7B"]
-    y-axis "Pass@1 (%)" 0 --> 100
-    bar [82, 76, 68, 64, 58]
-```
-
-| Modelo | Parâmetros | HumanEval | Infra Suite | VRAM | Latência (P50) |
-|--------|-----------|-----------|-------------|------|----------------|
-| **Qwen 2.5 Coder 7B** | 7B | 88.4% | 82% | 6 GB | 1.2s |
-| DeepSeek Coder V2 Lite | 16B | 86.1% | 76% | 12 GB | 2.1s |
-| CodeLlama 13B Instruct | 13B | 74.2% | 68% | 10 GB | 1.8s |
-| StarCoder2 7B | 7B | 71.8% | 64% | 6 GB | 1.1s |
-| Mistral 7B Instruct | 7B | 67.3% | 58% | 6 GB | 1.0s |
-
-> O **Qwen 2.5 Coder 7B** foi selecionado como modelo primário por oferecer o melhor equilíbrio entre qualidade, VRAM e latência para o domínio de infraestrutura.
+<p align="center">
+  <img alt="Status" src="https://img.shields.io/badge/status-experimental%20lab-d97706" />
+  <img alt="Dataset" src="https://img.shields.io/badge/dataset-25%20tarefas%20sint%C3%A9ticas-1f6feb" />
+  <img alt="Resultados" src="https://img.shields.io/badge/resultados-n%C3%A3o%20homologados-d97706" />
+  <img alt="Licença" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6e7681" />
+</p>
 
 ---
 
-## Benchmark Suite Customizada
+> [!WARNING]
+> Os resultados históricos incluídos em `benchmarks/results/` não possuem, neste snapshot,
+> respostas brutas e manifesto completo suficientes para reprodução independente. Eles são
+> mantidos como **material ilustrativo**, não como ranking homologado ou evidência de produção.
 
-A suite de avaliação foi desenvolvida especificamente para o domínio da debuga.ai:
+## Visão geral
 
-```mermaid
-graph LR
-    subgraph Categorias["Categorias de Teste"]
-        direction TB
-        C1["Bash/Shell Scripts<br/>25 problemas"]
-        C2["Docker & Compose<br/>20 problemas"]
-        C3["Python Automation<br/>30 problemas"]
-        C4["Network Config<br/>15 problemas"]
-        C5["CI/CD Pipelines<br/>15 problemas"]
-        C6["Log Analysis<br/>20 problemas"]
-        C7["Security Hardening<br/>15 problemas"]
-    end
-
-    subgraph Métricas["Métricas de Avaliação"]
-        direction TB
-        M1["Pass@1<br/>Primeira tentativa"]
-        M2["Pass@3<br/>Melhor de 3"]
-        M3["Syntax Valid<br/>Compilação"]
-        M4["Semantic Score<br/>Correção lógica"]
-        M5["Security Score<br/>Sem vulnerabilidades"]
-    end
-
-    Categorias --> Métricas
-```
-
-| Categoria | Problemas | Qwen Coder 7B | DeepSeek V2 | CodeLlama 13B |
-|-----------|-----------|---------------|-------------|---------------|
-| Bash/Shell Scripts | 25 | **88%** | 80% | 72% |
-| Docker & Compose | 20 | **85%** | 75% | 65% |
-| Python Automation | 30 | **83%** | 80% | 73% |
-| Network Config | 15 | **80%** | 73% | 60% |
-| CI/CD Pipelines | 15 | **77%** | 73% | 63% |
-| Log Analysis | 20 | **80%** | 76% | 68% |
-| Security Hardening | 15 | **78%** | 70% | 62% |
-
----
-
-## Metodologia de Avaliação
-
-```mermaid
-sequenceDiagram
-    participant R as Researcher
-    participant M as Modelo
-    participant V as Validator
-    participant S as Score Engine
-
-    R->>M: Prompt padronizado (zero-shot)
-    M->>V: Código gerado
-    V->>V: Syntax check (AST parse)
-    V->>V: Execução em sandbox
-    V->>V: Comparação com expected output
-    V->>S: Resultado (pass/fail/partial)
-    S->>R: Relatório consolidado
-
-    Note over R,S: Repetido 3x por problema (Pass@3)
-```
-
-**Critérios de aprovação:**
-
-1. **Syntax Valid** — Código compila/parseia sem erros
-2. **Execution Pass** — Executa e produz output esperado
-3. **Security Check** — Sem hardcoded secrets, injection vectors ou permissões excessivas
-4. **Style Score** — Segue convenções do domínio (shellcheck, pylint, hadolint)
-
----
-
-## Fine-Tuning (Pesquisa)
-
-Experimentos de fine-tuning com LoRA para especialização no domínio:
+O laboratório reúne datasets sintéticos, prompts públicos, notas técnicas e um runner para
+consultar endpoints OpenAI-compatible. O foco é organizar experimentos de modelos de código
+aplicados a Linux, redes, containers, automação e segurança defensiva.
 
 ```mermaid
 flowchart LR
-    subgraph Dataset["Dataset de Treinamento"]
-        D1["Runbooks internos<br/>500+ documentos"]
-        D2["Scripts de produção<br/>Anonimizados"]
-        D3["Pares Q&A<br/>Infraestrutura"]
-    end
-
-    subgraph Training["Treinamento"]
-        T1["LoRA r=16<br/>alpha=32"]
-        T2["4-bit Quantization<br/>QLoRA"]
-    end
-
-    subgraph Eval["Avaliação"]
-        E1["Infra Suite<br/>Custom benchmark"]
-        E2["A/B Test<br/>vs. base model"]
-    end
-
-    Dataset --> Training --> Eval
+  DATA[Datasets sintéticos] --> RUN[Benchmark runner]
+  MODEL[Endpoint do modelo] --> RUN
+  RUN --> RAW[Respostas brutas]
+  RUN --> METRICS[Métricas de transporte]
+  RAW --> REVIEW[Avaliação humana ou validador]
+  REVIEW --> REPORT[Relatório reproduzível]
 ```
 
-| Experimento | Base Model | Método | Melhoria Pass@1 | Status |
-|-------------|-----------|--------|-----------------|--------|
-| infra-lora-v1 | Qwen Coder 7B | LoRA r=16 | +4.2% | Concluído |
-| infra-qlora-v1 | Qwen Coder 7B | QLoRA 4-bit | +3.1% | Concluído |
-| devops-lora-v1 | Qwen Coder 7B | LoRA r=32 | +5.8% | Em avaliação |
+## Conteúdo atual
 
----
+| Área | Conteúdo | Estado |
+|---|---|---|
+| Dataset DevOps | 10 tarefas | Sintético |
+| Dataset de rede | 7 tarefas | Sintético |
+| Dataset de segurança | 8 tarefas | Sintético |
+| Runner HTTP | OpenAI-compatible | Implementado |
+| Latência e tokens | Coleta do endpoint | Implementado |
+| Avaliação semântica | Não automatizada | Pendente |
+| Sandbox de execução | Documentado conceitualmente | Não integrado ao runner |
+| Fine-tuning LoRA | Notas e configs | Pesquisa |
+| Resultados 7B/14B | Relatórios históricos | Não homologados |
 
-## Prompts Otimizados
+## O que o runner realmente mede
 
-Prompts testados e otimizados para cada categoria de tarefa:
+O script `benchmarks/run-benchmark.py` mede:
 
-| Categoria | Estratégia | Melhoria vs. naive |
-|-----------|-----------|-------------------|
-| Bash scripts | System prompt com shellcheck rules | +12% |
-| Docker | Few-shot com best practices | +15% |
-| Python automation | Chain-of-thought + type hints | +8% |
-| Network config | Structured output (YAML) | +18% |
-| Security | Adversarial examples no prompt | +10% |
+- sucesso ou falha da requisição HTTP;
+- latência total;
+- tokens reportados pelo provider;
+- tamanho da resposta;
+- saída bruta e manifesto da execução.
 
----
-
-## Integração com debuga.ai
-
-```mermaid
-flowchart TB
-    subgraph Plataforma["debuga.ai — Produção"]
-        IC["Intent Classifier<br/>Detecta tarefa de código"]
-        ROUTER["Router Engine<br/>Seleciona modelo"]
-        VLLM["vLLM Engine<br/>Qwen Coder 7B"]
-        POST["Post-Processing<br/>Syntax check + format"]
-        CHAT["Chat Interface<br/>Resultado ao usuário"]
-    end
-
-    IC -->|"code_generation"| ROUTER
-    ROUTER -->|"GPU disponível"| VLLM
-    VLLM --> POST
-    POST --> CHAT
-```
-
-O modelo selecionado neste laboratório é deployado via vLLM na infraestrutura da debuga.ai, servindo requisições de geração de código com latência < 2s.
-
----
-
-## Estrutura do Repositório
-
-```
-debuga-qwen-coder-lab/
-├── benchmarks/           # Resultados de benchmark
-├── notebooks/            # Jupyter notebooks de avaliação
-├── prompts/              # Prompts otimizados por categoria
-├── fine-tuning/          # Scripts e configs de fine-tuning
-├── scripts/              # Automação de avaliação
-├── docs/                 # Documentação detalhada
-├── requirements.txt      # Dependências Python
-└── README.md
-```
-
----
+Ele **não prova** que a resposta está tecnicamente correta. Correção, segurança, estilo e
+aderência ao resultado esperado exigem revisão humana ou um validador separado.
 
 ## Quick Start
 
 ```bash
-# 1. Clone
 git clone https://github.com/SperryTecnologia/debuga-qwen-coder-lab.git
 cd debuga-qwen-coder-lab
-
-# 2. Instale dependências
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-
-# 3. Execute benchmark
-python scripts/run_benchmark.py --model qwen2.5-coder-7b --suite infra
-
-# 4. Visualize resultados
-python scripts/generate_report.py --output results/
 ```
 
----
+Execute contra um endpoint OpenAI-compatible:
 
-## Repositórios Relacionados
+```bash
+python benchmarks/run-benchmark.py \
+  --model Qwen/Qwen2.5-Coder-7B-Instruct \
+  --dataset benchmarks/devops-tasks.jsonl \
+  --api-url http://localhost:8000/v1 \
+  --output benchmarks/results/runs
+```
 
-| Repositório | Descrição |
-|-------------|-----------|
-| [debuga-ai](https://github.com/SperryTecnologia/debuga-ai) | Plataforma principal |
-| [debuga-llm-stack](https://github.com/SperryTecnologia/debuga-llm-stack) | Estratégia LLM híbrida (GPU + cloud) |
-| [debuga-vllm-engine](https://github.com/SperryTecnologia/debuga-vllm-engine) | Serving local com vLLM |
-| [debuga-llm-gateway](https://github.com/SperryTecnologia/debuga-llm-gateway) | Gateway OpenAI-compatible |
+Quando necessário:
 
----
+```bash
+export LLM_API_KEY='chave-do-endpoint-de-teste'
+```
+
+A execução cria:
+
+```text
+manifest.json
+responses.jsonl
+metrics.csv
+```
+
+## Metodologia mínima
+
+Um benchmark publicável deve registrar:
+
+1. data, commit e comando;
+2. modelo e revisão exata;
+3. engine, imagem e versão;
+4. GPU, driver e quantização;
+5. temperatura, seed quando suportada e limites;
+6. dataset e hash;
+7. respostas brutas;
+8. método de avaliação;
+9. limitações e falhas.
+
+Consulte [benchmarks/METHODOLOGY.md](benchmarks/METHODOLOGY.md).
+
+## Resultados históricos
+
+Os arquivos existentes em `benchmarks/results/` são preservados para comparação documental,
+mas não devem ser utilizados como prova de superioridade, decisão de compra ou capacidade de
+produção. Novos resultados devem ser publicados em pastas de execução com manifesto e dados brutos.
+
+## Estrutura
+
+```text
+debuga-qwen-coder-lab/
+├── benchmarks/
+│   ├── METHODOLOGY.md
+│   ├── *.jsonl
+│   ├── run-benchmark.py
+│   └── results/
+├── docs/
+├── fine-tuning/
+├── notebooks/
+├── prompts/
+├── scripts/
+└── requirements.txt
+```
+
+## Documentação
+
+| Documento | Conteúdo |
+|---|---|
+| [Índice](docs/README.md) | Trilha de leitura |
+| [Ollama](docs/01-OLLAMA-O-QUE-E.md) | Conceitos e limitações |
+| [GPU e virtualização](docs/02-GPU-HYPERV-DDA-RTX3090.md) | Laboratório de passthrough |
+| [NVIDIA Toolkit](docs/03-DOCKER-NVIDIA-TOOLKIT.md) | Runtime de containers |
+| [Modelos](docs/04-MODELOS-QWEN-COMPARATIVO.md) | Critérios de comparação |
+| [API](docs/05-OLLAMA-API.md) | Exemplos de uso |
+| [Sandbox](docs/06-SANDBOX-E-TOOL-CALLING.md) | Segurança de ferramentas |
+| [Integração](docs/07-INTEGRACAO-COM-DEBUGA-HOMOLOG.md) | Integração genérica de teste |
+| [Benchmarks](docs/08-BENCHMARKS-E-TESTES.md) | Práticas de avaliação |
+| [Troubleshooting](docs/09-TROUBLESHOOTING.md) | Diagnóstico inicial |
+
+## Ecossistema público
+
+| Projeto | Papel |
+|---|---|
+| [debuga-ai](https://github.com/SperryTecnologia/debuga-ai) | Produto e documentação oficial |
+| [debuga-llm-stack](https://github.com/SperryTecnologia/debuga-llm-stack) | Arquitetura de referência |
+| [debuga-llm-gateway](https://github.com/SperryTecnologia/debuga-llm-gateway) | Gateway local/cloud |
+| [debuga-vllm-engine](https://github.com/SperryTecnologia/debuga-vllm-engine) | Serving GPU de referência |
+| [debuga-qwen-coder-lab](https://github.com/SperryTecnologia/debuga-qwen-coder-lab) | Este laboratório experimental |
 
 ## Licença
 
-Benchmarks, prompts e documentação sob licença MIT. Datasets de treinamento proprietários não estão inclusos.
+Este repositório mantém a licença proprietária existente em [LICENSE](LICENSE). A visibilidade
+pública não deve ser interpretada como uma licença open source. **A adequação dessa licença ao
+objetivo público do projeto ainda precisa de decisão explícita do proprietário.**
 
----
+Modelos, bibliotecas e ferramentas de terceiros mantêm suas próprias licenças.
 
-*Sperry Tecnologia — Infraestrutura, segurança, DevOps e automação com IA.*
+## Sperry Tecnologia
+
+- Plataforma: [debuga.ai](https://debuga.ai)
+- Contato: contato@sperrytecnologia.com.br

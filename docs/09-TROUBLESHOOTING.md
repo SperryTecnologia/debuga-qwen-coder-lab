@@ -283,7 +283,7 @@ docker exec debuga-app curl -s http://ollama:11434
 **Se falhar:**
 ```bash
 # Verificar se estão na mesma rede
-docker network inspect debuga-ai-homolog_default | grep -A5 "ollama\|app"
+docker network inspect projeto-teste_default | grep -A5 "ollama\|app"
 
 # Verificar nome do serviço no docker-compose
 grep "ollama" docker/docker-compose.yml

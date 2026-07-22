@@ -1,5 +1,10 @@
 # Tabela Comparativa — Modelos Qwen-Coder
 
+> [!WARNING]
+> **ARQUIVO HISTÓRICO NÃO HOMOLOGADO.** Este snapshot não inclui respostas brutas,
+> manifesto completo e método de scoring suficientes para reprodução independente.
+> Os números abaixo são mantidos como material ilustrativo e não devem orientar produção.
+
 > Resultados de laboratório com dados sintéticos. Não representa performance em produção.
 
 ## Resumo Geral

@@ -1,199 +1,184 @@
 #!/usr/bin/env python3
+"""Runner de transporte para endpoints OpenAI-compatible.
+
+Coleta respostas brutas e métricas. Não atribui nota de correção semântica.
 """
-debuga-qwen-coder-lab - Benchmark Runner
-
-Executa tarefas de avaliação contra um modelo via API OpenAI-compatible
-(vLLM, Ollama, ou qualquer endpoint compatível).
-
-Uso:
-    python run-benchmark.py \
-        --model Qwen/Qwen2.5-Coder-7B-Instruct \
-        --dataset benchmarks/devops-tasks.jsonl \
-        --output benchmarks/results/ \
-        --api-url http://localhost:8000/v1
-
-Requisitos:
-    pip install requests pandas tqdm pydantic
-"""
+from __future__ import annotations
 
 import argparse
+import csv
+import hashlib
 import json
 import os
+import platform
+import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
-import pandas as pd
 import requests
 from tqdm import tqdm
 
 
-def load_dataset(path: str) -> list[dict]:
-    """Carrega dataset JSONL."""
-    tasks = []
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open('rb') as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b''):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def load_dataset(path: Path) -> list[dict[str, Any]]:
+    tasks: list[dict[str, Any]] = []
+    with path.open('r', encoding='utf-8') as fh:
+        for line_number, line in enumerate(fh, start=1):
             line = line.strip()
-            if line:
-                tasks.append(json.loads(line))
+            if not line:
+                continue
+            item = json.loads(line)
+            for field in ('id', 'category', 'difficulty', 'task'):
+                if field not in item:
+                    raise ValueError(f'{path}:{line_number}: campo ausente: {field}')
+            tasks.append(item)
+    if not tasks:
+        raise ValueError(f'dataset vazio: {path}')
     return tasks
 
 
-def query_model(
-    api_url: str,
-    model: str,
-    task: str,
-    system_prompt: str,
-    temperature: float = 0.1,
-    max_tokens: int = 2048,
-) -> dict:
-    """Envia tarefa para o modelo e retorna resposta."""
-    headers = {"Content-Type": "application/json"}
-
-    # Adicionar API key se configurada
-    api_key = os.environ.get("LLM_API_KEY", "")
+def query_model(api_url: str, model: str, task: str, system_prompt: str,
+                temperature: float, max_tokens: int, timeout: int) -> dict[str, Any]:
+    headers = {'Content-Type': 'application/json'}
+    api_key = os.environ.get('LLM_API_KEY', '')
     if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-
+        headers['Authorization'] = f'Bearer {api_key}'
     payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": task},
+        'model': model,
+        'messages': [
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': task},
         ],
-        "temperature": temperature,
-        "max_tokens": max_tokens,
+        'temperature': temperature,
+        'max_tokens': max_tokens,
     }
-
-    start_time = time.time()
+    start = time.perf_counter()
     try:
         response = requests.post(
-            f"{api_url}/chat/completions",
+            f"{api_url.rstrip('/')}/chat/completions",
             headers=headers,
             json=payload,
-            timeout=120,
+            timeout=timeout,
         )
+        elapsed = time.perf_counter() - start
         response.raise_for_status()
-        result = response.json()
-        elapsed = time.time() - start_time
-
+        body = response.json()
+        content = body['choices'][0]['message'].get('content', '')
+        usage = body.get('usage', {})
         return {
-            "success": True,
-            "content": result["choices"][0]["message"]["content"],
-            "tokens_used": result.get("usage", {}).get("total_tokens", 0),
-            "latency_seconds": round(elapsed, 2),
+            'request_success': True,
+            'http_status': response.status_code,
+            'latency_seconds': round(elapsed, 4),
+            'content': content,
+            'usage': usage,
+            'error': None,
         }
-    except Exception as e:
+    except Exception as exc:  # noqa: BLE001 - registrado no artefato
         return {
-            "success": False,
-            "content": "",
-            "error": str(e),
-            "latency_seconds": round(time.time() - start_time, 2),
+            'request_success': False,
+            'http_status': getattr(getattr(exc, 'response', None), 'status_code', None),
+            'latency_seconds': round(time.perf_counter() - start, 4),
+            'content': '',
+            'usage': {},
+            'error': str(exc),
         }
 
 
-def run_benchmark(
-    dataset_path: str,
-    model: str,
-    api_url: str,
-    output_dir: str,
-) -> pd.DataFrame:
-    """Executa benchmark completo e salva resultados."""
-    tasks = load_dataset(dataset_path)
-    dataset_name = Path(dataset_path).stem
+def main() -> int:
+    parser = argparse.ArgumentParser(description='debuga Qwen Coder Lab transport runner')
+    parser.add_argument('--model', default='Qwen/Qwen2.5-Coder-7B-Instruct')
+    parser.add_argument('--dataset', required=True)
+    parser.add_argument('--output', default='benchmarks/results/runs')
+    parser.add_argument('--api-url', default='http://localhost:8000/v1')
+    parser.add_argument('--temperature', type=float, default=0.1)
+    parser.add_argument('--max-tokens', type=int, default=2048)
+    parser.add_argument('--timeout', type=int, default=120)
+    args = parser.parse_args()
+
+    dataset = Path(args.dataset).resolve()
+    output_root = Path(args.output).resolve()
+    tasks = load_dataset(dataset)
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    run_dir = output_root / f'{dataset.stem}-{timestamp}'
+    run_dir.mkdir(parents=True, exist_ok=False)
 
     system_prompt = (
-        "Você é um especialista em infraestrutura de TI, DevOps e segurança da informação. "
-        "Responda de forma técnica, objetiva e completa. "
-        "Inclua comandos específicos quando aplicável. "
-        "Estruture sua resposta com diagnóstico, causa raiz e solução."
+        'Você é um especialista em infraestrutura, DevOps e segurança defensiva. '
+        'Responda de forma técnica, objetiva e indique incertezas. '
+        'Não presuma acesso ao ambiente real.'
     )
 
-    results = []
-    print(f"\n{'='*60}")
-    print(f"  debuga-qwen-coder-lab - Benchmark Runner")
-    print(f"  Model: {model}")
-    print(f"  Dataset: {dataset_name} ({len(tasks)} tasks)")
-    print(f"  API: {api_url}")
-    print(f"{'='*60}\n")
-
-    for task in tqdm(tasks, desc="Evaluating"):
-        response = query_model(
-            api_url=api_url,
-            model=model,
-            task=task["task"],
-            system_prompt=system_prompt,
-        )
-
-        results.append({
-            "id": task["id"],
-            "category": task["category"],
-            "difficulty": task["difficulty"],
-            "task_preview": task["task"][:100] + "...",
-            "success": response["success"],
-            "response_length": len(response["content"]),
-            "tokens_used": response.get("tokens_used", 0),
-            "latency_seconds": response["latency_seconds"],
-            "error": response.get("error", ""),
-        })
-
-    # Criar DataFrame
-    df = pd.DataFrame(results)
-
-    # Salvar resultados
-    os.makedirs(output_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_short = model.split("/")[-1].lower().replace("-", "_")
-
-    csv_path = os.path.join(output_dir, f"{dataset_name}_{model_short}_{timestamp}.csv")
-    df.to_csv(csv_path, index=False)
-
-    # Gerar resumo
-    print(f"\n{'='*60}")
-    print(f"  RESULTADOS")
-    print(f"{'='*60}")
-    print(f"  Total de tarefas: {len(df)}")
-    print(f"  Sucesso: {df['success'].sum()}/{len(df)}")
-    print(f"  Latência média: {df['latency_seconds'].mean():.2f}s")
-    print(f"  Tokens médios: {df['tokens_used'].mean():.0f}")
-    print(f"\n  Por categoria:")
-    for cat, group in df.groupby("category"):
-        print(f"    {cat}: {group['success'].sum()}/{len(group)} OK, "
-              f"avg {group['latency_seconds'].mean():.2f}s")
-    print(f"\n  Resultados salvos em: {csv_path}")
-    print(f"{'='*60}\n")
-
-    return df
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="debuga-qwen-coder-lab Benchmark Runner"
-    )
-    parser.add_argument(
-        "--model",
-        default="Qwen/Qwen2.5-Coder-7B-Instruct",
-        help="Model ID (default: Qwen/Qwen2.5-Coder-7B-Instruct)",
-    )
-    parser.add_argument(
-        "--dataset",
-        required=True,
-        help="Path to JSONL dataset file",
-    )
-    parser.add_argument(
-        "--output",
-        default="benchmarks/results/",
-        help="Output directory for results (default: benchmarks/results/)",
-    )
-    parser.add_argument(
-        "--api-url",
-        default="http://localhost:8000/v1",
-        help="OpenAI-compatible API URL (default: http://localhost:8000/v1)",
+    manifest = {
+        'schema_version': 1,
+        'created_at_utc': datetime.now(timezone.utc).isoformat(),
+        'model': args.model,
+        'api_url': args.api_url,
+        'dataset': str(dataset),
+        'dataset_sha256': sha256_file(dataset),
+        'task_count': len(tasks),
+        'temperature': args.temperature,
+        'max_tokens': args.max_tokens,
+        'timeout_seconds': args.timeout,
+        'python': sys.version,
+        'platform': platform.platform(),
+        'semantic_scoring': 'not_performed',
+        'note': 'request_success mede transporte HTTP, não correção técnica',
+    }
+    (run_dir / 'manifest.json').write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8'
     )
 
-    args = parser.parse_args()
-    run_benchmark(args.dataset, args.model, args.api_url, args.output)
+    rows: list[dict[str, Any]] = []
+    responses_path = run_dir / 'responses.jsonl'
+    with responses_path.open('w', encoding='utf-8') as raw:
+        for task in tqdm(tasks, desc='Consultando endpoint'):
+            result = query_model(
+                args.api_url, args.model, task['task'], system_prompt,
+                args.temperature, args.max_tokens, args.timeout,
+            )
+            record = {
+                'task': task,
+                'result': result,
+                'evaluation': {'status': 'not_scored'},
+            }
+            raw.write(json.dumps(record, ensure_ascii=False) + '\n')
+            usage = result.get('usage', {})
+            rows.append({
+                'id': task['id'],
+                'category': task['category'],
+                'difficulty': task['difficulty'],
+                'request_success': result['request_success'],
+                'http_status': result['http_status'],
+                'latency_seconds': result['latency_seconds'],
+                'response_chars': len(result.get('content', '')),
+                'prompt_tokens': usage.get('prompt_tokens', 0),
+                'completion_tokens': usage.get('completion_tokens', 0),
+                'total_tokens': usage.get('total_tokens', 0),
+                'evaluation_status': 'not_scored',
+                'error': result.get('error') or '',
+            })
+
+    metrics_path = run_dir / 'metrics.csv'
+    with metrics_path.open('w', newline='', encoding='utf-8') as fh:
+        writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+
+    successes = sum(bool(row['request_success']) for row in rows)
+    print(f'Run: {run_dir}')
+    print(f'Requisições HTTP bem-sucedidas: {successes}/{len(rows)}')
+    print('Avaliação semântica: não realizada')
+    return 0 if successes == len(rows) else 2
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    raise SystemExit(main())

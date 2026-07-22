@@ -156,7 +156,7 @@ Antes de enviar a resposta ao usuário, o backend deve:
 
 ## Isolamento de Rede
 
-No docker-compose do debuga-ai-homolog, o Ollama roda em rede interna:
+No docker-compose do ambiente de teste, o Ollama roda em rede interna:
 
 ```yaml
 services:
@@ -244,4 +244,4 @@ Isso está **fora do escopo** do Ollama e deste laboratório. O debuga.ai não e
 
 ## Próximo Passo
 
-Agora que você entende a segurança, aprenda a integrar o Ollama com o debuga.ai homolog. Veja [07-INTEGRACAO-COM-DEBUGA-HOMOLOG.md](07-INTEGRACAO-COM-DEBUGA-HOMOLOG.md).
+Agora que você entende a segurança, aprenda a integrar o Ollama com o ambiente de teste. Veja [07-INTEGRACAO-COM-DEBUGA-HOMOLOG.md](07-INTEGRACAO-COM-DEBUGA-HOMOLOG.md).
